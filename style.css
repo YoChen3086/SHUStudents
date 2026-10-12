@@ -446,3 +446,17 @@ tbody tr:nth-child(odd) {
 tbody tr:hover {
     background-color: #e2e8f0;
 }
+
+/* 點名區塊改為 2 欄並排 */
+#attendance-sections-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+/* 手機版螢幕較小時自動變回單欄 */
+@media (max-width: 768px) {
+    #attendance-sections-container {
+        grid-template-columns: 1fr;
+    }
+}

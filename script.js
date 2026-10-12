@@ -58,7 +58,7 @@ async function saveData() {
 
 // 頁面載入時執行
 window.onload = function() {
-    currentSortColumn = 'year';
+    currentSortColumn = 'activityCount';
     currentSortDirection = 'desc';
     loadDataFromGoogleSheet();
 };
@@ -93,7 +93,7 @@ function getHighestPriorityType(student) {
     return '其他';
 }
 
-let currentSortColumn = 'year';
+let currentSortColumn = 'activityCount';
 let currentSortDirection = 'desc';
 
 function switchTab(tabId) {
@@ -302,14 +302,16 @@ function sortStudents(column) {
 }
 
 function updateSortIndicators() {
-    ['name', 'year', 'dept'].forEach(col => {
+    ['name', 'year', 'status', 'activityCount'].forEach(col => {
         const th = document.getElementById(`th-${col}`);
         if (th) {
-            let baseText = col === 'name' ? '姓名' : col === 'year' ? '學年' : '科系';
+            let baseText = col === 'name' ? '姓名' : col === 'year' ? '學年' : col === 'status' ? '成全狀態' : '參加過的活動';
             if (currentSortColumn === col) {
+                // 當前排序欄位才顯示對應的上下箭頭
                 th.innerText = `${baseText} ${currentSortDirection === 'asc' ? '▲' : '▼'}`;
             } else {
-                th.innerText = `${baseText} ↕`;
+                // 非當前排序欄位不顯示 icon
+                th.innerText = baseText;
             }
         }
     });
@@ -339,12 +341,31 @@ function filterAndRenderStudents() {
 
     if (currentSortColumn) {
         result.sort((a, b) => {
-            let valA = a[currentSortColumn] || '';
-            let valB = b[currentSortColumn] || '';
-            if (currentSortColumn === 'year') {
-                valA = Number(valA) || 0;
-                valB = Number(valB) || 0;
+            let valA, valB;
+
+            if (currentSortColumn === 'status') {
+                valA = (a.statuses && a.statuses.length > 0) ? a.statuses.join(', ') : '';
+                valB = (b.statuses && b.statuses.length > 0) ? b.statuses.join(', ') : '';
+            } else if (currentSortColumn === 'activityCount') {
+                // 計算今年參與活動的數量
+                valA = 0;
+                valB = 0;
+                for (let actId in attendance) {
+                    const act = activities.find(actItem => actItem.id == actId);
+                    if (act && act.isThisYear === '是') {
+                        if (attendance[actId].includes(a.id)) valA++;
+                        if (attendance[actId].includes(b.id)) valB++;
+                    }
+                }
+            } else {
+                valA = a[currentSortColumn] || '';
+                valB = b[currentSortColumn] || '';
+                if (currentSortColumn === 'year') {
+                    valA = Number(valA) || 0;
+                    valB = Number(valB) || 0;
+                }
             }
+
             if (valA < valB) return currentSortDirection === 'asc' ? -1 : 1;
             if (valA > valB) return currentSortDirection === 'asc' ? 1 : -1;
             return 0;
@@ -403,8 +424,8 @@ function filterAndRenderStudents() {
                 <td>${s.hometown || '-'}</td>
                 <td>${typesStr}</td>
                 <td>${statusesStr}</td>
-                <td>${seniorsStr}</td>
-                <td>${formattedNote}</td>
+                <td style='max-width: 150px'>${seniorsStr}</td>
+                <td style='max-width: 150px'>${formattedNote}</td>
                 <td>${activitiesHtml}</td>
                 <td>
                     <button class="btn btn-warning" onclick="editStudent(${s.id})">編輯</button>
@@ -639,7 +660,7 @@ function renderAttendanceList() {
         const groupStudents = students.filter(s => getHighestPriorityType(s) === g.type);
         if (groupStudents.length > 0) {
             let html = `
-                <div class="attendance-group-box" style="margin-bottom: 15px;">
+                <div class="attendance-group-box">
                     <h4 style="font-size:0.95rem; color:var(--primary-color); margin-bottom: 8px; border-bottom:1px solid var(--border-color); padding-bottom:4px;">${g.title} (${groupStudents.length}人)</h4>
                     <div class="list-checkbox-container" style="display: flex; flex-direction: column; gap: 6px; padding: 8px; background: #fafafa; border: 1px solid var(--border-color); border-radius: 6px; max-height: 200px; overflow-y: auto;">
             `;
