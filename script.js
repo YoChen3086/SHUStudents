@@ -1,6 +1,6 @@
 // script.js
 // 請將此處換成你的 Google Apps Script 網頁應用程式網址
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxzAz_DZlVD_71pRW9ZSbP8SMa6HcntzU1WjCICfk75Q7JEz6TPWbGabOYRZnbPW__B/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxVM2pLpm88y3795LGIaoETunBq1561__18xfjnXG11P7Ms8BEdxGk3BWw5nqCQSNzb/exec";
 
 let students = [];
 let activities = [];
@@ -190,7 +190,8 @@ function handleStudentForm(event) {
         types: selectedTypes,
         statuses: selectedStatuses,
         seniors: selectedSeniors,
-        note: document.getElementById('s-note').value
+        note: document.getElementById('s-note').value,
+        disconnected: document.getElementById('s-disconnected').checked ? '是' : '否'
     };
 
     if (editId) {
@@ -210,6 +211,8 @@ function clearCheckboxes() {
     document.querySelectorAll('input[name="student-type"]').forEach(cb => cb.checked = false);
     document.querySelectorAll('input[name="student-status"]').forEach(cb => cb.checked = false);
     document.querySelectorAll('input[name="student-senior"]').forEach(cb => cb.checked = false);
+    const disconnectedEl = document.getElementById('s-disconnected');
+    if (disconnectedEl) disconnectedEl.checked = false;
 }
 
 function editStudent(id) {
@@ -225,6 +228,11 @@ function editStudent(id) {
     document.getElementById('s-dept').value = student.dept;
     document.getElementById('s-hometown').value = student.hometown || '';
     document.getElementById('s-note').value = student.note || '';
+    
+    const disconnectedEl = document.getElementById('s-disconnected');
+    if (disconnectedEl) {
+        disconnectedEl.checked = (student.disconnected === '是');
+    }
 
     document.querySelectorAll('input[name="student-type"]').forEach(cb => {
         cb.checked = student.types && student.types.includes(cb.value);
@@ -307,10 +315,8 @@ function updateSortIndicators() {
         if (th) {
             let baseText = col === 'name' ? '姓名' : col === 'year' ? '學年' : col === 'status' ? '成全狀態' : '參加過的活動';
             if (currentSortColumn === col) {
-                // 當前排序欄位才顯示對應的上下箭頭
                 th.innerText = `${baseText} ${currentSortDirection === 'asc' ? '▲' : '▼'}`;
             } else {
-                // 非當前排序欄位不顯示 icon
                 th.innerText = baseText;
             }
         }
@@ -325,6 +331,9 @@ function filterAndRenderStudents() {
     const filterContact = document.getElementById('filter-contact').value;
 
     let result = students.filter(s => {
+        // 若已斷聯，則不顯示在道親名單列表
+        if (s.disconnected === '是') return false;
+
         const matchKeyword = !keyword || 
             s.name.toLowerCase().includes(keyword) || 
             s.dept.toLowerCase().includes(keyword) || 
@@ -347,7 +356,6 @@ function filterAndRenderStudents() {
                 valA = (a.statuses && a.statuses.length > 0) ? a.statuses.join(', ') : '';
                 valB = (b.statuses && b.statuses.length > 0) ? b.statuses.join(', ') : '';
             } else if (currentSortColumn === 'activityCount') {
-                // 計算今年參與活動的數量
                 valA = 0;
                 valB = 0;
                 for (let actId in attendance) {
@@ -389,7 +397,6 @@ function filterAndRenderStudents() {
         const seniorsStr = (s.seniors && s.seniors.length > 0) ? s.seniors.join(', ') : '-';
         const formattedNote = s.note ? s.note.replace(/\n/g, '<br>') : '-';
 
-        // 找出該道親參與過的活動，並且只留下「是否為今年」為「是」的活動
         let joinedActivities = [];
         for (let actId in attendance) {
             if (attendance[actId].includes(s.id)) {
@@ -459,7 +466,7 @@ function deleteActivity(id) {
     }
 }
 
-// 細分計算：講師 / 幹部 / 新生 / 其他
+// 細分計算：講師 / 幹部 / 新生 / 其他 (保留已斷聯道親的統計)
 function calculateActivityBreakdown(actId) {
     const attendedIds = attendance[actId] || [];
     let counts = { lecturer: 0, cadre: 0, freshman: 0, other: 0, total: attendedIds.length };
@@ -481,7 +488,6 @@ function renderActivityTable() {
     const tbody = document.querySelector('#activity-table tbody');
     tbody.innerHTML = '';
     
-    // 活動列表以日期最新的排序 (降冪)
     const sortedActivities = [...activities].sort((a, b) => b.date.localeCompare(a.date));
 
     document.getElementById('activity-count-badge').innerText = `總活動數：${sortedActivities.length} 場`;
@@ -489,15 +495,13 @@ function renderActivityTable() {
     sortedActivities.forEach(a => {
         const breakdown = calculateActivityBreakdown(a.id);
         const displayType = (!a.type || a.type.trim() === '') ? '其他' : a.type;
-        const formattedDate = formatDate(a.date); // 格式化日期
+        const formattedDate = formatDate(a.date);
         
-        // 讀取手動指定的「是否為今年」
         const isThisYear = a.isThisYear === '是';
         const yearBadgeHtml = isThisYear 
             ? '<span style="background: #27ae60; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 600;">是</span>' 
             : '<span style="background: #cbd5e1; color: #475569; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem;">否</span>';
 
-        // 取得參加這場活動的人員清單
         const attendedIds = attendance[a.id] || [];
         const attendees = students.filter(s => attendedIds.includes(s.id));
         let attendeesHtml = '<span style="color: #64748b;">無出席紀錄</span>';
@@ -560,7 +564,8 @@ function renderStatusTable() {
     document.getElementById('status-count-badge').innerText = `總狀態數：${statuses.length} 個`;
 
     statuses.forEach(st => {
-        const count = students.filter(s => s.statuses && s.statuses.includes(st.name)).length;
+        // 排除已斷聯的道親計數
+        const count = students.filter(s => s.disconnected !== '是' && s.statuses && s.statuses.includes(st.name)).length;
         tbody.innerHTML += `
             <tr>
                 <td>${st.name}</td>
@@ -572,7 +577,6 @@ function renderStatusTable() {
 }
 
 function renderDropdowns() {
-    // 活動點名與查詢下拉選單也依日期最新排序
     const sortedActivities = [...activities].sort((a, b) => b.date.localeCompare(a.date));
 
     const actSelects = [
@@ -583,7 +587,7 @@ function renderDropdowns() {
         const currentVal = sel.value;
         sel.innerHTML = '<option value="">-- 請選擇活動 --</option>';
         sortedActivities.forEach(a => {
-            const formattedDate = formatDate(a.date); // 格式化日期
+            const formattedDate = formatDate(a.date);
             sel.innerHTML += `<option value="${a.id}">${formattedDate} - ${a.name}</option>`;
         });
         sel.value = currentVal;
@@ -592,7 +596,7 @@ function renderDropdowns() {
     renderStudentQueryDropdowns();
 }
 
-// 填入道親個人查詢的四個分類下拉選單
+// 填入道親個人查詢的四個分類下拉選單 (排除已斷聯道親)
 function renderStudentQueryDropdowns() {
     const categories = [
         { key: 'lecturer', id: 'query-stu-lecturer', label: '講師' },
@@ -607,7 +611,7 @@ function renderStudentQueryDropdowns() {
         const currentVal = selectEl.value;
         selectEl.innerHTML = `<option value="">-- 請選擇${cat.label} --</option>`;
         
-        const filteredStudents = students.filter(s => getHighestPriorityType(s) === cat.label);
+        const filteredStudents = students.filter(s => s.disconnected !== '是' && getHighestPriorityType(s) === cat.label);
         filteredStudents.forEach(s => {
             selectEl.innerHTML += `<option value="${s.id}">${s.name} (${s.year}學年 - ${s.dept})</option>`;
         });
@@ -615,7 +619,6 @@ function renderStudentQueryDropdowns() {
     });
 }
 
-// 處理道親個人查詢下拉選單的互斥選取
 function handleStudentQuerySelect(categoryKey) {
     const categories = ['lecturer', 'cadre', 'freshman', 'other'];
     categories.forEach(cat => {
@@ -633,7 +636,7 @@ function handleStudentQuerySelect(categoryKey) {
     }
 }
 
-// 點名分成 講師/幹部/新生/其他，以名單方式勾選
+// 點名列表 (排除已斷聯道親)
 function renderAttendanceList() {
     const actId = document.getElementById('attend-activity-select').value;
     const container = document.getElementById('attendance-container');
@@ -657,7 +660,22 @@ function renderAttendanceList() {
     ];
 
     groups.forEach(g => {
-        const groupStudents = students.filter(s => getHighestPriorityType(s) === g.type);
+        // 篩選出該身分且「未斷聯」的道親
+        let groupStudents = students.filter(s => s.disconnected !== '是' && getHighestPriorityType(s) === g.type);
+
+        groupStudents.sort((a, b) => {
+            let countA = 0;
+            let countB = 0;
+            for (let id in attendance) {
+                if (attendance[id].includes(a.id)) countA++;
+                if (attendance[id].includes(b.id)) countB++;
+            }
+            if (countB !== countA) {
+                return countB - countA;
+            }
+            return a.name.localeCompare(b.name, 'zh-Hant');
+        });
+
         if (groupStudents.length > 0) {
             let html = `
                 <div class="attendance-group-box">
@@ -666,10 +684,16 @@ function renderAttendanceList() {
             `;
             groupStudents.forEach(s => {
                 const isChecked = attendedIds.includes(s.id) ? 'checked' : '';
+                
+                let totalJoined = 0;
+                for (let id in attendance) {
+                    if (attendance[id].includes(s.id)) totalJoined++;
+                }
+
                 html += `
                     <label class="checkbox-item" style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer;">
                         <input type="checkbox" value="${s.id}" ${isChecked}>
-                        <span><strong>${s.name}</strong> (${s.year}學年 - ${s.dept})</span>
+                        <span><strong>${s.name}</strong> (${s.year}學年 - ${s.dept}) <span style="color: #64748b; font-size: 0.8rem;">[參與${totalJoined}場]</span></span>
                     </label>
                 `;
             });
@@ -774,7 +798,6 @@ function queryStudentDetail(stuIdParam) {
         }
     }
 
-    // 歷史活動依日期最新的排序
     joinedActivities.sort((a, b) => b.date.localeCompare(a.date));
 
     if (joinedActivities.length === 0) {
@@ -782,7 +805,7 @@ function queryStudentDetail(stuIdParam) {
     } else {
         joinedActivities.forEach(a => {
             const displayType = (!a.type || a.type.trim() === '') ? '其他' : a.type;
-            const formattedDate = formatDate(a.date); // 格式化日期
+            const formattedDate = formatDate(a.date);
             tbody.innerHTML += `
                 <tr>
                     <td>${formattedDate}</td>
@@ -793,7 +816,6 @@ function queryStudentDetail(stuIdParam) {
         });
     }
 }
-
 
 // 確保日期格式為 yyyy-MM-dd
 function formatDate(dateString) {

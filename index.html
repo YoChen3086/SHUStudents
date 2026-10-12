@@ -161,7 +161,7 @@
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>狀態名稱</label>
-                                <input type="text" id="st-name" required placeholder="例：穩定 / 慕道中 / 核心同工">
+                                <input type="text" id="st-name" required placeholder="例：求道 / 法會 / 研究班">
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary">新增狀態</button>
@@ -374,6 +374,12 @@
                     <div class="form-group full-width">
                         <label>聯絡人（僅限講師/幹部，可複選）</label>
                         <div id="s-seniors-checkboxes" class="checkbox-grid-small"></div>
+                    </div>
+                    <!-- 在 index.html 的 student-form 表單內新增以下欄位 -->
+                    <div class="form-group full-width">
+                        <label class="checkbox-item" style="color: var(--danger-color); font-weight: bold;">
+                            <input type="checkbox" id="s-disconnected" value="是"> 是否已斷聯
+                        </label>
                     </div>
                     <div class="form-group full-width">
                         <label>備註（可填寫多行）</label>

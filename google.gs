@@ -31,7 +31,7 @@ function doPost(e) {
 
 function getAllData() {
   return {
-    students: getTableData('Students', ['id', 'name', 'year', 'gender', 'dept', 'hometown', 'types', 'statuses', 'seniors', 'note'], row => ({
+    students: getTableData('Students', ['id', 'name', 'year', 'gender', 'dept', 'hometown', 'types', 'statuses', 'seniors', 'note', 'disconnected'], row => ({
       id: Number(row[0]),
       name: row[1],
       year: String(row[2]),
@@ -41,7 +41,8 @@ function getAllData() {
       types: row[6] ? row[6].split(',') : [],
       statuses: row[7] ? row[7].split(',') : [],
       seniors: row[8] ? row[8].split(',') : [],
-      note: row[9]
+      note: row[9],
+      disconnected: row[10] || '否'
     })),
     activities: getTableData('Activities', ['id', 'date', 'name', 'type', 'isThisYear'], row => ({
       id: Number(row[0]),
@@ -79,7 +80,19 @@ function getAttendanceData() {
 }
 
 function saveAllData(payload) {
-  saveTableData('Students', payload.students, s => [s.id, s.name, s.year, s.gender, s.dept, s.hometown, (s.types||[]).join(','), (s.statuses||[]).join(','), (s.seniors||[]).join(','), s.note]);
+  saveTableData('Students', payload.students, s => [
+    s.id, 
+    s.name, 
+    s.year, 
+    s.gender, 
+    s.dept, 
+    s.hometown, 
+    (s.types||[]).join(','), 
+    (s.statuses||[]).join(','), 
+    (s.seniors||[]).join(','), 
+    s.note, 
+    s.disconnected || '否'
+  ]);
   saveTableData('Activities', payload.activities, a => [a.id, a.date, a.name, a.type, a.isThisYear]);
   saveTableData('Statuses', payload.statuses, st => [st.id, st.name]);
   saveAttendanceData(payload.attendance);
@@ -105,16 +118,12 @@ function saveAttendanceData(attObj) {
   }
   let rows = [];
   for (let actId in attObj) {
-    // 確保 ID 或內容被視為字串，避免被自動轉成數字/科學記號
     const ids = (attObj[actId] || []).map(id => String(id));
     rows.push([String(actId), ids.join(',')]);
   }
   if (rows.length > 0) {
     const range = sheet.getRange(2, 1, rows.length, 2);
-    
-    // 【關鍵】在寫入數值之前，先將該範圍的儲存格格式設為純文字 (Plain Text)
     range.setNumberFormat('@');
-    
     range.setValues(rows);
   }
 }
