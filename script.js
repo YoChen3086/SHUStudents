@@ -1,6 +1,6 @@
 // script.js
 // 請將此處換成你的 Google Apps Script 網頁應用程式網址
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx4hMzhnY9FB2_98-jJFD_icE5jmR62wSD3WEhJJZ1JkuKikI3wcqnGN84A2BL0OQU_/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxzAz_DZlVD_71pRW9ZSbP8SMa6HcntzU1WjCICfk75Q7JEz6TPWbGabOYRZnbPW__B/exec";
 
 let students = [];
 let activities = [];

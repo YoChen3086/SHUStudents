@@ -105,9 +105,16 @@ function saveAttendanceData(attObj) {
   }
   let rows = [];
   for (let actId in attObj) {
-    rows.push([actId, (attObj[actId] || []).join(',')]);
+    // 確保 ID 或內容被視為字串，避免被自動轉成數字/科學記號
+    const ids = (attObj[actId] || []).map(id => String(id));
+    rows.push([String(actId), ids.join(',')]);
   }
   if (rows.length > 0) {
-    sheet.getRange(2, 1, rows.length, 2).setValues(rows);
+    const range = sheet.getRange(2, 1, rows.length, 2);
+    
+    // 【關鍵】在寫入數值之前，先將該範圍的儲存格格式設為純文字 (Plain Text)
+    range.setNumberFormat('@');
+    
+    range.setValues(rows);
   }
 }
