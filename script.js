@@ -63,31 +63,6 @@ window.onload = function() {
     loadDataFromGoogleSheet();
 };
 
-const defaultStudents = [
-    { id: 1, name: "林小美", year: "114", gender: "女", dept: "圖傳系", hometown: "台北市", types: [], statuses: ["穩定", "積極慕道"], seniors: ["陳大華"], note: "對素食有興趣\n喜歡閱讀" },
-    { id: 2, name: "張志明", year: "115", gender: "男", dept: "新聞系", hometown: "高雄市", types: [], statuses: ["關懷中"], seniors: ["陳大華", "李小雅"], note: "適應大學生活轉變中" },
-    { id: 3, name: "陳大華", year: "112", gender: "男", dept: "資管系", hometown: "台中市", types: ["幹部", "講師"], statuses: ["穩定"], seniors: [], note: "伙食團負責人" },
-    { id: 4, name: "李小雅", year: "113", gender: "女", dept: "口傳系", hometown: "台南市", types: ["幹部"], statuses: ["穩定"], seniors: ["陳大華"], note: "幹部成員" }
-];
-
-const defaultActivities = [
-    { id: 1, date: "2026-03-10", name: "期初相見歡茶會", type: "聚餐" },
-    { id: 2, date: "2026-03-25", name: "週末溫馨成全聚", type: "成全" }
-];
-
-const defaultStatuses = [
-    { id: 1, name: "穩定" },
-    { id: 2, name: "關懷中" },
-    { id: 3, name: "積極慕道" },
-    { id: 4, name: "已畢業" },
-    { id: 5, name: "暫停" }
-];
-
-const defaultAttendance = {
-    "1": [1, 2, 3, 4],
-    "2": [1, 3]
-};
-
 // 取得系統中最高學年（用來判定是否為新生）
 function getLatestAcademicYear() {
     if (students.length === 0) return "115";
@@ -464,9 +439,10 @@ function renderActivityTable() {
     sortedActivities.forEach(a => {
         const breakdown = calculateActivityBreakdown(a.id);
         const displayType = (!a.type || a.type.trim() === '') ? '其他' : a.type;
+        const formattedDate = formatDate(a.date); // 格式化日期
         tbody.innerHTML += `
             <tr>
-                <td>${a.date}</td>
+                <td>${formattedDate}</td>
                 <td>${a.name}</td>
                 <td>${displayType}</td>
                 <td><strong>${breakdown.total}</strong> 人</td>
@@ -532,7 +508,8 @@ function renderDropdowns() {
         const currentVal = sel.value;
         sel.innerHTML = '<option value="">-- 請選擇活動 --</option>';
         sortedActivities.forEach(a => {
-            sel.innerHTML += `<option value="${a.id}">${a.date} - ${a.name}</option>`;
+            const formattedDate = formatDate(a.date); // 格式化日期
+            sel.innerHTML += `<option value="${a.id}">${formattedDate} - ${a.name}</option>`;
         });
         sel.value = currentVal;
     });
@@ -730,13 +707,29 @@ function queryStudentDetail(stuIdParam) {
     } else {
         joinedActivities.forEach(a => {
             const displayType = (!a.type || a.type.trim() === '') ? '其他' : a.type;
+            const formattedDate = formatDate(a.date); // 格式化日期
             tbody.innerHTML += `
                 <tr>
-                    <td>${a.date}</td>
+                    <td>${formattedDate}</td>
                     <td>${a.name}</td>
                     <td>${displayType}</td>
                 </tr>
             `;
         });
     }
+}
+
+
+// 確保日期格式為 yyyy-MM-dd
+function formatDate(dateString) {
+    if (!dateString) return '';
+    // 如果是 ISO 字串或其他格式，取前 10 碼 (yyyy-MM-dd)
+    const d = new Date(dateString);
+    if (!isNaN(d.getTime())) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+    return dateString.substring(0, 10);
 }
