@@ -1,0 +1,390 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>世新伙食團成全名單管理系統</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🍚 世新伙食團成全名單管理系統</h1>
+            <p class="subtitle">道親成全、活動紀錄與出席追蹤</p>
+        </header>
+
+        <!-- 導覽頁籤 -->
+        <nav class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('students')">1. 道親管理</button>
+            <button class="tab-btn" onclick="switchTab('activities')">2. 活動管理</button>
+            <button class="tab-btn" onclick="switchTab('status-config')">3. 成全狀態管理</button>
+            <button class="tab-btn" onclick="switchTab('attendance')">4. 參與活動點名</button>
+            <button class="tab-btn" onclick="switchTab('query-activity')">5. 活動查詢統計</button>
+            <button class="tab-btn" onclick="switchTab('query-student')">6. 道親個人查詢</button>
+        </nav>
+
+        <main>
+            <!-- 1. 道親管理 -->
+            <section id="tab-students" class="tab-content active">
+                <div class="card">
+                    <div class="section-header-flex">
+                        <h2>道親名單列表</h2>
+                        <div>
+                            <button type="button" class="btn btn-primary" onclick="openStudentModal()">+ 新增道親</button>
+                            <span id="student-count-badge" class="count-badge" style="margin-left: 10px;">總人數：0 人</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 篩選列 -->
+                    <div class="filter-bar">
+                        <div class="form-group">
+                            <label>搜尋關鍵字</label>
+                            <input type="text" id="filter-keyword" placeholder="姓名 / 科系 / 家鄉..." oninput="filterAndRenderStudents()">
+                        </div>
+                        <div class="form-group">
+                            <label>篩選學年</label>
+                            <select id="filter-year" onchange="filterAndRenderStudents()">
+                                <option value="">全部學年</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>篩選身份類型</label>
+                            <select id="filter-type" onchange="filterAndRenderStudents()">
+                                <option value="">全部類型</option>
+                                <option value="新生">新生</option>
+                                <option value="幹部">幹部</option>
+                                <option value="講師">講師</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>篩選成全狀態</label>
+                            <select id="filter-status" onchange="filterAndRenderStudents()">
+                                <option value="">全部狀態</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>篩選聯絡人</label>
+                            <select id="filter-contact" onchange="filterAndRenderStudents()">
+                                <option value="">全部聯絡人</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="justify-content: flex-end;">
+                            <button type="button" class="btn btn-secondary" onclick="resetFilters()" style="margin-top: 22px;">重設篩選</button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table id="student-table">
+                            <thead>
+                                <tr>
+                                    <th onclick="sortStudents('name')" class="sortable" id="th-name">姓名 ↕</th>
+                                    <th onclick="sortStudents('year')" class="sortable" id="th-year">學年 ↕</th>
+                                    <th>性別</th>
+                                    <th onclick="sortStudents('dept')" class="sortable" id="th-dept">科系 ↕</th>
+                                    <th>家鄉</th>
+                                    <th>身份類型</th>
+                                    <th>成全狀態</th>
+                                    <th>聯絡人</th>
+                                    <th>備註</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. 活動管理 -->
+            <section id="tab-activities" class="tab-content">
+                <div class="card">
+                    <h2>新增活動</h2>
+                    <form id="activity-form" onsubmit="addActivity(event)">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>活動日期</label>
+                                <input type="date" id="act-date" required>
+                            </div>
+                            <div class="form-group">
+                                <label>活動名稱</label>
+                                <input type="text" id="act-name" required placeholder="例：期初迎新茶會">
+                            </div>
+                            <div class="form-group">
+                                <label>性質</label>
+                                <input type="text" id="act-type" placeholder="例：聚餐/成全/戶外 (選填，未填則視為「其他」)">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">新增活動</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <div class="section-header-flex">
+                        <h2>活動列表</h2>
+                        <span id="activity-count-badge" class="count-badge">總活動數：0 場</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="activity-table">
+                            <thead>
+                                <tr>
+                                    <th>日期</th>
+                                    <th>名稱</th>
+                                    <th>性質</th>
+                                    <th>總出席人數</th>
+                                    <th>細分 (講師 / 幹部 / 新生 / 其他)</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. 成全狀態管理 -->
+            <section id="tab-status-config" class="tab-content">
+                <div class="card">
+                    <h2>新增成全狀態標籤</h2>
+                    <form id="status-form" onsubmit="addStatusTag(event)">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>狀態名稱</label>
+                                <input type="text" id="st-name" required placeholder="例：穩定 / 慕道中 / 核心同工">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">新增狀態</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <div class="section-header-flex">
+                        <h2>現有成全狀態列表</h2>
+                        <span id="status-count-badge" class="count-badge">總狀態數：0 個</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="status-table">
+                            <thead>
+                                <tr>
+                                    <th>狀態名稱</th>
+                                    <th>目前使用人數</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. 參與活動（點名） -->
+            <section id="tab-attendance" class="tab-content">
+                <div class="card">
+                    <h2>活動出席登記</h2>
+                    <div class="form-group" style="max-width: 400px; margin-bottom: 20px;">
+                        <label>選擇要點名的活動：</label>
+                        <select id="attend-activity-select" onchange="renderAttendanceList()">
+                            <option value="">-- 請選擇活動 --</option>
+                        </select>
+                    </div>
+
+                    <div id="attendance-container" style="display: none;">
+                        <p class="hint-text">請依分類勾選當日有參與該活動的道親：</p>
+                        <div id="attendance-sections-container"></div>
+                        <button type="button" class="btn btn-success" onclick="saveAttendance()" style="margin-top: 20px;">儲存出席紀錄</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. 可查詢活動 -->
+            <section id="tab-query-activity" class="tab-content">
+                <div class="card">
+                    <h2>活動參與情形查詢</h2>
+                    <div class="form-group" style="max-width: 400px; margin-bottom: 20px;">
+                        <label>選擇活動：</label>
+                        <select id="query-act-select" onchange="queryActivityDetail()">
+                            <option value="">-- 請選擇活動 --</option>
+                        </select>
+                    </div>
+
+                    <div id="act-query-result" style="display: none;">
+                        <div class="stats-cards">
+                            <div class="stat-box">
+                                <h3>實際參加總人數</h3>
+                                <p id="stat-count">0</p>
+                            </div>
+                            <div class="stat-box">
+                                <h3>講師人數</h3>
+                                <p id="stat-lecturer">0</p>
+                            </div>
+                            <div class="stat-box">
+                                <h3>幹部人數</h3>
+                                <p id="stat-cadre">0</p>
+                            </div>
+                            <div class="stat-box">
+                                <h3>新生人數</h3>
+                                <p id="stat-freshman">0</p>
+                            </div>
+                            <div class="stat-box">
+                                <h3>其他人數</h3>
+                                <p id="stat-other">0</p>
+                            </div>
+                        </div>
+
+                        <h3>參加道親名單</h3>
+                        <div class="table-responsive">
+                            <table id="act-attendees-table">
+                                <thead>
+                                    <tr>
+                                        <th>姓名</th>
+                                        <th>學年</th>
+                                        <th>科系</th>
+                                        <th>主要身份</th>
+                                        <th>成全狀態</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. 可查詢道親 -->
+            <section id="tab-query-student" class="tab-content">
+                <div class="card">
+                    <h2>道親個人歷程查詢</h2>
+                    <div class="query-student-select-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <div class="form-group">
+                            <label>依 講師 查詢：</label>
+                            <select id="query-stu-lecturer" onchange="handleStudentQuerySelect('lecturer')">
+                                <option value="">-- 請選擇講師 --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>依 幹部 查詢：</label>
+                            <select id="query-stu-cadre" onchange="handleStudentQuerySelect('cadre')">
+                                <option value="">-- 請選擇幹部 --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>依 新生 查詢：</label>
+                            <select id="query-stu-freshman" onchange="handleStudentQuerySelect('freshman')">
+                                <option value="">-- 請選擇新生 --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>依 其他 查詢：</label>
+                            <select id="query-stu-other" onchange="handleStudentQuerySelect('other')">
+                                <option value="">-- 請選擇其他 --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="stu-query-result" style="display: none;">
+                        <div class="profile-card">
+                            <h3>個人基本資訊</h3>
+                            <div class="profile-grid">
+                                <div><strong>姓名：</strong> <span id="p-name"></span></div>
+                                <div><strong>學年：</strong> <span id="p-year"></span></div>
+                                <div><strong>性別：</strong> <span id="p-gender"></span></div>
+                                <div><strong>科系：</strong> <span id="p-dept"></span></div>
+                                <div><strong>家鄉：</strong> <span id="p-hometown"></span></div>
+                                <div><strong>身份類型：</strong> <span id="p-types"></span></div>
+                                <div><strong>成全狀態：</strong> <span id="p-status"></span></div>
+                                <div class="full-width"><strong>聯絡人：</strong> <span id="p-senior"></span></div>
+                                <div class="full-width"><strong>備註：</strong> <span id="p-note" style="white-space: pre-wrap;"></span></div>
+                            </div>
+                        </div>
+
+                        <h3>參加過的歷史活動</h3>
+                        <div class="table-responsive">
+                            <table id="stu-history-table">
+                                <thead>
+                                    <tr>
+                                        <th>活動日期</th>
+                                        <th>活動名稱</th>
+                                        <th>活動性質</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 道親編輯/新增 Popup Modal -->
+    <div id="student-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="section-header-flex">
+                <h2 id="student-form-title">新增道親</h2>
+                <button type="button" class="btn btn-secondary" onclick="closeStudentModal()">關閉</button>
+            </div>
+            <form id="student-form" onsubmit="handleStudentForm(event)">
+                <input type="hidden" id="edit-student-id">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>姓名</label>
+                        <input type="text" id="s-name" required placeholder="例：王小明">
+                    </div>
+                    <div class="form-group">
+                        <label>入學/所屬學年</label>
+                        <input type="text" id="s-year" required placeholder="例：115">
+                    </div>
+                    <div class="form-group">
+                        <label>性別</label>
+                        <select id="s-gender">
+                            <option value="男">男</option>
+                            <option value="女">女</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>科系</label>
+                        <input type="text" id="s-dept" required placeholder="例：圖傳系">
+                    </div>
+                    <div class="form-group">
+                        <label>家鄉</label>
+                        <input type="text" id="s-hometown" placeholder="例：台中市">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>身份類型（可複選：幹部 / 講師）</label>
+                        <div id="s-types-checkboxes" class="checkbox-grid-small">
+                            <label class="checkbox-item"><input type="checkbox" name="student-type" value="幹部"> 幹部</label>
+                            <label class="checkbox-item"><input type="checkbox" name="student-type" value="講師"> 講師</label>
+                        </div>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>成全狀態（可複選）</label>
+                        <div id="s-status-checkboxes" class="checkbox-grid-small"></div>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>聯絡人（僅限講師/幹部，可複選）</label>
+                        <div id="s-seniors-checkboxes" class="checkbox-grid-small"></div>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>備註（可填寫多行）</label>
+                        <textarea id="s-note" rows="3" placeholder="飲食習慣、特殊狀況、關懷進度等..."></textarea>
+                    </div>
+                </div>
+                <div class="form-actions" style="margin-top: 15px;">
+                    <button type="submit" class="btn btn-primary" id="student-submit-btn">新增道親</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeStudentModal()">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading 遮罩 -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner-box">
+            <div class="spinner"></div>
+            <p>正在從 Google 試算表載入資料，請稍候...</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
