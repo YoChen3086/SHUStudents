@@ -78,6 +78,7 @@
                         <table id="student-table">
                             <thead>
                                 <tr>
+                                    <th>序號</th>
                                     <th onclick="sortStudents('name')" class="sortable" id="th-name">姓名 ↕</th>
                                     <th onclick="sortStudents('year')" class="sortable" id="th-year">學年 ↕</th>
                                     <th>性別</th>
@@ -87,6 +88,7 @@
                                     <th>成全狀態</th>
                                     <th>聯絡人</th>
                                     <th>備註</th>
+                                    <th>參加過的活動</th>
                                     <th>操作</th>
                                 </tr>
                             </thead>
@@ -114,6 +116,13 @@
                                 <label>性質</label>
                                 <input type="text" id="act-type" placeholder="例：聚餐/成全/戶外 (選填，未填則視為「其他」)">
                             </div>
+                            <div class="form-group">
+                                <label>是否為今年 (學年度)</label>
+                                <select id="act-is-this-year" required>
+                                    <option value="是">是</option>
+                                    <option value="否">否</option>
+                                </select>
+                            </div>
                         </div>
                         <button type="submit" class="btn btn-primary">新增活動</button>
                     </form>
@@ -129,10 +138,12 @@
                             <thead>
                                 <tr>
                                     <th>日期</th>
+                                    <th>是否為今年</th>
                                     <th>名稱</th>
                                     <th>性質</th>
                                     <th>總出席人數</th>
                                     <th>細分 (講師 / 幹部 / 新生 / 其他)</th>
+                                    <th>參加的人</th>
                                     <th>操作</th>
                                 </tr>
                             </thead>

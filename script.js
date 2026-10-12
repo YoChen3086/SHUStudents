@@ -1,6 +1,6 @@
 // script.js
 // 請將此處換成你的 Google Apps Script 網頁應用程式網址
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbweCnfCOJur4VTwgJcOQmqhPzDj6x8p9WkXqPVJ1Lazazvvce92y2ai7hg7a7r-lGpW/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx4hMzhnY9FB2_98-jJFD_icE5jmR62wSD3WEhJJZ1JkuKikI3wcqnGN84A2BL0OQU_/exec";
 
 let students = [];
 let activities = [];
@@ -358,17 +358,44 @@ function filterAndRenderStudents() {
     tbody.innerHTML = '';
     
     if (result.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #64748b;">沒有符合條件的道親資料</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: #64748b;">沒有符合條件的道親資料</td></tr>`;
         return;
     }
 
-    result.forEach(s => {
+    result.forEach((s, index) => {
         const typesStr = getStudentTypes(s).join(', ') || '-';
         const statusesStr = (s.statuses && s.statuses.length > 0) ? s.statuses.join(', ') : '-';
         const seniorsStr = (s.seniors && s.seniors.length > 0) ? s.seniors.join(', ') : '-';
         const formattedNote = s.note ? s.note.replace(/\n/g, '<br>') : '-';
+
+        // 找出該道親參與過的活動，並且只留下「是否為今年」為「是」的活動
+        let joinedActivities = [];
+        for (let actId in attendance) {
+            if (attendance[actId].includes(s.id)) {
+                const act = activities.find(a => a.id == actId);
+                if (act && act.isThisYear === '是') {
+                    joinedActivities.push(act);
+                }
+            }
+        }
+        joinedActivities.sort((a, b) => b.date.localeCompare(a.date));
+
+        let activitiesHtml = '<span style="color: #64748b;">無今年紀錄</span>';
+        if (joinedActivities.length > 0) {
+            let listItems = joinedActivities.map(a => `<li>${formatDate(a.date)} - ${a.name}</li>`).join('');
+            activitiesHtml = `
+                <details>
+                    <summary style="cursor: pointer; color: var(--accent-color); font-weight: 500;">查看今年活動 (${joinedActivities.length}場)</summary>
+                    <ul style="margin-top: 5px; padding-left: 18px; font-size: 0.85rem; max-height: 120px; overflow-y: auto;">
+                        ${listItems}
+                    </ul>
+                </details>
+            `;
+        }
+
         tbody.innerHTML += `
             <tr>
+                <td>${index + 1}</td>
                 <td>${s.name}</td>
                 <td>${s.year}學年</td>
                 <td>${s.gender}</td>
@@ -378,6 +405,7 @@ function filterAndRenderStudents() {
                 <td>${statusesStr}</td>
                 <td>${seniorsStr}</td>
                 <td>${formattedNote}</td>
+                <td>${activitiesHtml}</td>
                 <td>
                     <button class="btn btn-warning" onclick="editStudent(${s.id})">編輯</button>
                     <button class="btn btn-danger" onclick="deleteStudent(${s.id})">刪除</button>
@@ -394,7 +422,8 @@ function addActivity(event) {
         id: Date.now(),
         date: document.getElementById('act-date').value,
         name: document.getElementById('act-name').value,
-        type: typeInput === '' ? '其他' : typeInput
+        type: typeInput === '' ? '其他' : typeInput,
+        isThisYear: document.getElementById('act-is-this-year').value
     };
     activities.push(newAct);
     saveData();
@@ -440,13 +469,38 @@ function renderActivityTable() {
         const breakdown = calculateActivityBreakdown(a.id);
         const displayType = (!a.type || a.type.trim() === '') ? '其他' : a.type;
         const formattedDate = formatDate(a.date); // 格式化日期
+        
+        // 讀取手動指定的「是否為今年」
+        const isThisYear = a.isThisYear === '是';
+        const yearBadgeHtml = isThisYear 
+            ? '<span style="background: #27ae60; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 600;">是</span>' 
+            : '<span style="background: #cbd5e1; color: #475569; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem;">否</span>';
+
+        // 取得參加這場活動的人員清單
+        const attendedIds = attendance[a.id] || [];
+        const attendees = students.filter(s => attendedIds.includes(s.id));
+        let attendeesHtml = '<span style="color: #64748b;">無出席紀錄</span>';
+        if (attendees.length > 0) {
+            let attendeeItems = attendees.map(s => `<li>${s.name} (${s.dept} - ${getHighestPriorityType(s)})</li>`).join('');
+            attendeesHtml = `
+                <details>
+                    <summary style="cursor: pointer; color: var(--accent-color); font-weight: 500;">查看名單 (${attendees.length}人)</summary>
+                    <ul style="margin-top: 5px; padding-left: 18px; font-size: 0.85rem; max-height: 120px; overflow-y: auto;">
+                        ${attendeeItems}
+                    </ul>
+                </details>
+            `;
+        }
+
         tbody.innerHTML += `
             <tr>
                 <td>${formattedDate}</td>
+                <td>${yearBadgeHtml}</td>
                 <td>${a.name}</td>
                 <td>${displayType}</td>
                 <td><strong>${breakdown.total}</strong> 人</td>
                 <td>講師: ${breakdown.lecturer} | 幹部: ${breakdown.cadre} | 新生: ${breakdown.freshman} | 其他: ${breakdown.other}</td>
+                <td>${attendeesHtml}</td>
                 <td><button class="btn btn-danger" onclick="deleteActivity(${a.id})">刪除</button></td>
             </tr>
         `;
@@ -723,7 +777,6 @@ function queryStudentDetail(stuIdParam) {
 // 確保日期格式為 yyyy-MM-dd
 function formatDate(dateString) {
     if (!dateString) return '';
-    // 如果是 ISO 字串或其他格式，取前 10 碼 (yyyy-MM-dd)
     const d = new Date(dateString);
     if (!isNaN(d.getTime())) {
         const year = d.getFullYear();
