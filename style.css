@@ -431,3 +431,18 @@ tr:hover {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+/* 表格偶數行設為淺黃色底色 */
+tbody tr:nth-child(even) {
+    background-color: #FFF8D7; /* 淺黃色背景 */
+}
+
+/* 表格奇數行設為白色底色 */
+tbody tr:nth-child(odd) {
+    background-color: #ffffff; /* 白色背景 */
+}
+
+/* 滑鼠懸停時的高亮效果 (可依需求調整) */
+tbody tr:hover {
+    background-color: #e2e8f0;
+}

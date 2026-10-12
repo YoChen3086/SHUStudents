@@ -397,7 +397,7 @@ function filterAndRenderStudents() {
             <tr>
                 <td>${index + 1}</td>
                 <td>${s.name}</td>
-                <td>${s.year}學年</td>
+                <td>${s.year}</td>
                 <td>${s.gender}</td>
                 <td>${s.dept}</td>
                 <td>${s.hometown || '-'}</td>
